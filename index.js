@@ -28,7 +28,9 @@ async function assumeRole(params) {
     region,
     roleSkipSessionTagging,
     webIdentityTokenFile,
-    webIdentityToken
+    webIdentityToken,
+    mfaToken,
+    mfaSerial,
   } = params;
   assert(
       [roleToAssume, roleDurationSeconds, roleSessionName, region].every(isDefined),
@@ -83,6 +85,11 @@ async function assumeRole(params) {
 
   if (roleExternalId) {
     assumeRoleRequest.ExternalId = roleExternalId;
+  }
+
+  if (mfaToken) {
+    assumeRoleRequest.TokenCode = mfaToken;
+    assumeRoleRequest.SerialNumber = mfaSerial;
   }
 
   let assumeFunction = sts.assumeRole.bind(sts);
@@ -267,6 +274,9 @@ async function run() {
     const roleSkipSessionTaggingInput = core.getInput('role-skip-session-tagging', { required: false })|| 'false';
     const roleSkipSessionTagging = roleSkipSessionTaggingInput.toLowerCase() === 'true';
     const webIdentityTokenFile = core.getInput('web-identity-token-file', { required: false });
+    const mfaToken = core.getInput('mfa-token', { required: false });
+    const mfaSerial = core.getInput('mfa-serial', { required: false });
+
 
     if (!region.match(REGION_REGEX)) {
       throw new Error(`Region is not valid: ${region}`);
@@ -297,6 +307,12 @@ async function run() {
       exportCredentials({accessKeyId, secretAccessKey, sessionToken});
     }
     
+    if (mfaSerial || mfaToken) {
+      if (!mfaSerial || !mfaToken) {
+        throw new Error("'mfa-token' and 'mfa-serial' must be provided if either are used");
+      }
+    }
+
     // Attempt to load credentials from the GitHub OIDC provider.
     // If a user provides an IAM Role Arn and DOESN'T provide an Access Key Id
     // The only way to assume the role is via GitHub's OIDC provider.
@@ -328,7 +344,9 @@ async function run() {
         roleSessionName,
         roleSkipSessionTagging,
         webIdentityTokenFile,
-        webIdentityToken
+        webIdentityToken,
+        mfaToken,
+        mfaSerial,
       });
       exportCredentials(roleCredentials);
       // I don't know a good workaround for this. I'm not sure why we're validating the credentials

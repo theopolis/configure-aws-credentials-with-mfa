@@ -42,6 +42,12 @@ inputs:
   role-duration-seconds:
     description: "Role duration in seconds (default: 6 hours)"
     required: false
+  mfa-token:
+    description: "Token when the user/role requires MFA"
+    required: false
+  mfa-serial:
+    description: "Serial/ARN when the user/role requires MFA"
+    required: false
   role-session-name:
     description: 'Role session name (default: GitHubActions)'
     required: false
